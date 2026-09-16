@@ -1,398 +1,438 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>オフライン多機能会場マップ (ACP・諸室・ゾーン連動)</title>
-  <link rel="stylesheet" href="css/styles.css?v=3.0">
-  <style>
-    /* インライン完全CSS埋め込み (GitHub Pages上でのCSS読み込み失敗防止) */
-    :root {
-      --primary: #007aff;
-      --primary-hover: #0056b3;
-      --accent-acp: #ff3b30;
-      --accent-zone: #af52de;
-      --bg-color: #0f172a;
-      --panel-bg: rgba(30, 41, 59, 0.95);
-      --panel-border: rgba(255, 255, 255, 0.1);
-      --text-primary: #f8fafc;
-      --text-secondary: #94a3b8;
-      --card-bg: #1e293b;
-      --card-hover: #334155;
-      --shadow-lg: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5);
-      --radius: 12px;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aichi-Nagoya 2026 パス・エリア判定ツール</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background-color: #f1f5f9;
+            color: #1e293b;
+            margin: 0;
+            padding: 20px;
+            line-height: 1.5;
+        }
+        .container {
+            max-width: 960px;
+            margin: 0 auto;
+        }
+        h1 {
+            font-size: 22px;
+            color: #1e1b4b;
+            margin-bottom: 4px;
+        }
+        p.subtitle {
+            font-size: 13px;
+            color: #64748b;
+            margin-bottom: 16px;
+        }
+        /* カラーフィルター風アンカーボタン */
+        .filter-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 24px;
+        }
+        .filter-btn {
+            font-size: 12px;
+            font-weight: bold;
+            padding: 6px 12px;
+            border-radius: 6px;
+            text-decoration: none;
+            color: #fff;
+            border: none;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+        .btn-all { background: #475569; }
+        .btn-gold { background: #ca8a04; color: #fff; }
+        .btn-silver { background: #64748b; }
+        .btn-blue { background: #2563eb; }
+        .btn-red { background: #dc2626; }
+        .btn-yellow { background: #ca8a04; }
+        .btn-green { background: #16a34a; }
+        .btn-purple { background: #9333ea; }
+        .btn-orange { background: #ea580c; }
+        .btn-brown { background: #78350f; }
 
-    body.light-theme {
-      --bg-color: #f4f6f8;
-      --panel-bg: rgba(255, 255, 255, 0.95);
-      --panel-border: rgba(0, 0, 0, 0.1);
-      --text-primary: #0f172a;
-      --text-secondary: #64748b;
-      --card-bg: #ffffff;
-      --card-hover: #f1f5f9;
-    }
+        h2 {
+            font-size: 18px;
+            color: #1e1b4b;
+            border-bottom: 2px solid #cbd5e1;
+            padding-bottom: 6px;
+            margin-top: 32px;
+            margin-bottom: 16px;
+        }
 
-    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        /* グリッドレイアウト (PC2〜3列、スマホ1列) */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 16px;
+        }
+        .card {
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .card-title {
+            font-weight: bold;
+            font-size: 16px;
+            color: #0f172a;
+        }
+        /* バッジ */
+        .badge {
+            font-size: 11px;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .badge-gold { background: #facc15; color: #713f12; }
+        .badge-silver { background: #94a3b8; color: #fff; }
+        .badge-blue { background: #2563eb; color: #fff; }
+        .badge-red { background: #dc2626; color: #fff; }
+        .badge-yellow { background: #facc15; color: #713f12; }
+        .badge-green { background: #16a34a; color: #fff; }
+        .badge-purple { background: #9333ea; color: #fff; }
+        .badge-orange { background: #f97316; color: #fff; }
+        .badge-brown { background: #78350f; color: #fff; }
+        .badge-gray { background: #475569; color: #fff; }
 
-    html, body {
-      margin: 0; padding: 0; width: 100%; height: 100%;
-      overflow: hidden;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-      background-color: var(--bg-color); color: var(--text-primary);
-      display: flex; flex-direction: column;
-    }
-
-    body > input[type="radio"], body > input[type="checkbox"] {
-      display: none !important; position: absolute !important; opacity: 0 !important; pointer-events: none !important; width: 0 !important; height: 0 !important;
-    }
-
-    .modal-card input[type="radio"], .modal-card input[type="checkbox"] {
-      display: inline-block !important; margin-right: 4px;
-    }
-
-    .control-panel {
-      background: var(--panel-bg); backdrop-filter: blur(12px); padding: 10px 14px;
-      border-bottom: 1px solid var(--panel-border); z-index: 40; box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-      display: flex; flex-direction: column; gap: 8px;
-    }
-
-    .top-row { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
-
-    .floor-tabs { display: flex; gap: 6px; background: rgba(0, 0, 0, 0.2); padding: 4px; border-radius: 10px; }
-    .tab-btn { padding: 6px 14px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; color: var(--text-secondary); transition: all 0.2s ease; user-select: none; }
-    .tab-btn:hover { color: var(--text-primary); }
-
-    .layer-menu { display: flex; gap: 6px; font-size: 12px; overflow-x: auto; padding-bottom: 2px; }
-    .layer-menu label { cursor: pointer; padding: 6px 10px; background: var(--card-bg); color: var(--text-secondary); border-radius: 8px; border: 1px solid var(--panel-border); white-space: nowrap; font-weight: 600; display: flex; align-items: center; gap: 4px; transition: all 0.2s ease; user-select: none; }
-    .layer-menu label:hover { background: var(--card-hover); }
-
-    .search-filter-row { display: flex; gap: 8px; align-items: center; }
-    .search-box-wrap { position: relative; flex: 1; }
-    .search-input { width: 100%; padding: 8px 12px 8px 32px; border-radius: 8px; border: 1px solid var(--panel-border); background: var(--card-bg); color: var(--text-primary); font-size: 13px; outline: none; }
-    .search-input:focus { border-color: var(--primary); }
-    .search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text-secondary); pointer-events: none; }
-    .dept-select { padding: 8px 10px; border-radius: 8px; border: 1px solid var(--panel-border); background: var(--card-bg); color: var(--text-primary); font-size: 12px; font-weight: 600; outline: none; cursor: pointer; }
-
-    .btn-primary { padding: 6px 14px; background: var(--primary); color: #fff; border: none; border-radius: 6px; font-weight: 700; font-size: 12px; cursor: pointer; transition: background 0.2s; }
-    .btn-primary:hover { background: var(--primary-hover); }
-    .btn-secondary { padding: 6px 12px; background: var(--card-hover); color: var(--text-primary); border: 1px solid var(--panel-border); border-radius: 6px; font-weight: 600; font-size: 12px; cursor: pointer; }
-
-    .map-viewport { position: relative; flex: 1; background: #0b1120; overflow: hidden; touch-action: none; cursor: grab; }
-    .map-viewport:active { cursor: grabbing; }
-
-    .map-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; transform-origin: 0 0; transition: transform 0.05s linear; }
-    .floor-map { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; background-size: contain; background-repeat: no-repeat; background-position: center; }
-    .floor-map img.bg-svg { width: 100%; height: 100%; object-fit: contain; pointer-events: none; user-select: none; }
-
-    .zoom-controls { position: absolute; right: 14px; top: 14px; z-index: 35; display: flex; flex-direction: column; gap: 6px; }
-    .zoom-btn { width: 38px; height: 38px; background: var(--panel-bg); border: 1px solid var(--panel-border); color: var(--text-primary); border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.3); backdrop-filter: blur(8px); }
-
-    .room-pin-container, .acp-pin-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
-
-    .room-pin { position: absolute; pointer-events: auto; width: 7px; height: 7px; border-radius: 50%; background: var(--primary); border: 1px solid #ffffff; transform: translate(-50%, -50%); box-shadow: 0 1px 4px rgba(0, 0, 0, 0.6); cursor: pointer; transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease, z-index 0.2s; z-index: 10; }
-    .room-pin:hover { transform: translate(-50%, -50%) scale(2.2); z-index: 900; box-shadow: 0 0 12px rgba(56, 189, 248, 0.9), 0 0 0 2px rgba(255, 255, 255, 0.9); }
-
-    .acp-pin { position: absolute; pointer-events: auto; width: 9px; height: 9px; border-radius: 50%; background: radial-gradient(circle, #ff4d4d 0%, #dc2626 100%); border: 1px solid #ffffff; transform: translate(-50%, -50%); box-shadow: 0 0 6px rgba(239, 68, 68, 0.8), 0 1px 4px rgba(0, 0, 0, 0.5); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0px; color: transparent; transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease, z-index 0.2s; z-index: 12; }
-    .acp-pin:hover { transform: translate(-50%, -50%) scale(2.2); z-index: 900; box-shadow: 0 0 15px rgba(239, 68, 68, 1), 0 0 0 2px rgba(255, 255, 255, 0.9); }
-
-    body.editor-active .room-pin { width: 10px; height: 10px; cursor: grab !important; box-shadow: 0 0 0 3px #f59e0b, 0 0 10px rgba(245, 158, 11, 0.8) !important; animation: pulse-ring 1.5s infinite ease-in-out; }
-    body.editor-active .acp-pin { width: 12px; height: 12px; cursor: grab !important; box-shadow: 0 0 0 3px #f59e0b, 0 0 10px rgba(245, 158, 11, 0.8) !important; animation: pulse-ring 1.5s infinite ease-in-out; }
-
-    @keyframes pulse-ring { 0% { box-shadow: 0 0 0 2px #f59e0b, 0 0 6px rgba(245, 158, 11, 0.6); } 50% { box-shadow: 0 0 0 4px #f59e0b, 0 0 14px rgba(245, 158, 11, 0.9); } 100% { box-shadow: 0 0 0 2px #f59e0b, 0 0 6px rgba(245, 158, 11, 0.6); } }
-    .room-pin.is-dragging, .acp-pin.is-dragging { cursor: grabbing !important; transform: translate(-50%, -50%) scale(2.2) !important; z-index: 9999 !important; box-shadow: 0 0 0 4px #ef4444, 0 0 20px rgba(239, 68, 68, 1) !important; transition: none !important; }
-
-    .pin-tooltip { position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%) translateY(-6px); background: rgba(15, 23, 42, 0.96); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 8px; padding: 8px 12px; white-space: nowrap; pointer-events: none !important; opacity: 0; visibility: hidden; transition: opacity 0.15s ease, transform 0.15s ease, visibility 0.15s; box-shadow: 0 10px 25px rgba(0,0,0,0.6); z-index: 1000; color: #ffffff; text-align: left; }
-    .pin-tooltip::after { content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); border-width: 5px; border-style: solid; border-color: rgba(15, 23, 42, 0.96) transparent transparent transparent; pointer-events: none !important; }
-
-    .room-pin:hover .pin-tooltip, .acp-pin:hover .pin-tooltip { opacity: 1; visibility: visible; transform: translateX(-50%) translateY(-10px); }
-    .pin-tooltip-title { font-size: 12px; font-weight: 800; color: #f8fafc; display: flex; align-items: center; gap: 6px; }
-    .pin-tooltip-sub { font-size: 10px; color: #94a3b8; margin-top: 2px; }
-    .pin-tooltip-acp-badge { font-size: 9px; color: #fca5a5; margin-top: 3px; font-weight: 700; }
-    .dept-badge { display: inline-block; padding: 1px 5px; border-radius: 4px; font-size: 9px; font-weight: 800; color: #ffffff; }
-
-    .zone-layer-svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5; }
-    .zone-polygon { pointer-events: auto; cursor: pointer; transition: fill-opacity 0.2s, stroke-width 0.2s; }
-    .zone-polygon:hover { fill-opacity: 0.45 !important; stroke-width: 3px !important; }
-
-    .info-panel { background: var(--panel-bg); backdrop-filter: blur(12px); padding: 12px 18px; border-top: 1px solid var(--panel-border); font-size: 13px; color: var(--text-primary); height: 140px; min-height: 140px; flex-shrink: 0; overflow-y: auto; z-index: 35; box-shadow: 0 -5px 20px rgba(0,0,0,0.3); }
-    .detail-card { display: flex; flex-direction: column; gap: 8px; }
-    .detail-header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid var(--panel-border); padding-bottom: 8px; }
-    .detail-title { font-size: 16px; font-weight: 800; color: var(--text-primary); display: flex; align-items: center; gap: 8px; }
-    .detail-code { font-size: 12px; color: var(--text-secondary); font-family: monospace; }
-    .badge { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; }
-    .badge-acp { background: var(--accent-acp); color: #fff; }
-    .badge-dept { background: var(--primary); color: #fff; }
-    .detail-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; margin-top: 4px; }
-    .detail-item { background: var(--card-bg); padding: 6px 10px; border-radius: 6px; border: 1px solid var(--panel-border); }
-    .detail-item .label { font-size: 10px; color: var(--text-secondary); display: block; }
-    .detail-item .value { font-size: 12px; font-weight: 700; color: var(--text-primary); }
-
-    #tab-outdoor:checked ~ .map-viewport #map-outdoor { display: block; }
-    #tab-1f:checked ~ .map-viewport #map-1f { display: block; }
-    #tab-2f:checked ~ .map-viewport #map-2f { display: block; }
-
-    #tab-outdoor:checked ~ .control-panel label[for="tab-outdoor"],
-    #tab-1f:checked ~ .control-panel label[for="tab-1f"],
-    #tab-2f:checked ~ .control-panel label[for="tab-2f"] { background: var(--primary); color: #fff; }
-
-    #layer-room:checked ~ .map-viewport .room-pin-container { display: block; }
-    .room-pin-container { display: none; }
-    #layer-acp:checked ~ .map-viewport .acp-pin-container { display: block; }
-    .acp-pin-container { display: none; }
-    #layer-zone:checked ~ .map-viewport .zone-layer-svg { display: block; }
-    .zone-layer-svg { display: none; }
-
-    #layer-room:checked ~ .control-panel label[for="layer-room"] { background: var(--primary); color: #fff; border-color: var(--primary); }
-    #layer-acp:checked ~ .control-panel label[for="layer-acp"] { background: var(--accent-acp); color: #fff; border-color: var(--accent-acp); }
-    #layer-zone:checked ~ .control-panel label[for="layer-zone"] { background: var(--accent-zone); color: #fff; border-color: var(--accent-zone); }
-
-    .modal-backdrop { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(8px); z-index: 9999; display: none; align-items: center; justify-content: center; padding: 16px; }
-    .modal-backdrop.open { display: flex; }
-    .modal-card { background: var(--panel-bg); border: 1px solid var(--panel-border); border-radius: 12px; width: 100%; max-width: 480px; max-height: 90vh; overflow-y: auto; padding: 18px; box-shadow: 0 20px 40px rgba(0,0,0,0.5); color: var(--text-primary); }
-    .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--panel-border); padding-bottom: 10px; }
-    .modal-close { background: none; border: none; color: var(--text-secondary); font-size: 18px; font-weight: bold; cursor: pointer; }
-    .form-group { display: flex; flex-direction: column; gap: 4px; }
-    .form-group label { font-size: 11px; font-weight: 700; color: var(--text-secondary); }
-    .form-group input, .form-group select, .form-group textarea { padding: 8px 10px; border-radius: 6px; border: 1px solid var(--panel-border); background: var(--card-bg); color: var(--text-primary); font-size: 13px; outline: none; }
-    .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--primary); }
-    .editor-badge { position: absolute; left: 14px; top: 14px; background: #f59e0b; color: #000; padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 800; z-index: 35; display: none; box-shadow: 0 4px 10px rgba(0,0,0,0.4); }
-    .editor-active .editor-badge { display: block; }
-
-    @media (max-width: 768px) {
-      .pin-tooltip { padding: 4px 8px !important; border-radius: 6px !important; max-width: 180px !important; white-space: normal !important; word-break: break-word !important; box-shadow: 0 4px 15px rgba(0,0,0,0.8) !important; }
-      .pin-tooltip-title { font-size: 10px !important; gap: 4px !important; line-height: 1.25 !important; }
-      .pin-tooltip-sub { font-size: 8px !important; margin-top: 1px !important; line-height: 1.2 !important; }
-      .pin-tooltip-acp-badge { font-size: 8px !important; margin-top: 2px !important; }
-      .dept-badge { padding: 1px 3px !important; font-size: 8px !important; border-radius: 3px !important; }
-      .info-panel { height: 110px !important; min-height: 110px !important; padding: 8px 12px !important; font-size: 11px !important; }
-      .detail-title { font-size: 13px !important; }
-      .detail-code { font-size: 10px !important; }
-      .detail-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 4px !important; }
-      .detail-item { padding: 3px 6px !important; }
-      .detail-item .label { font-size: 8px !important; }
-      .detail-item .value { font-size: 9px !important; }
-    }
-  </style>
+        /* 画像エリア */
+        .card-img-box {
+            width: 100%;
+            height: 150px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+        .card-img-box img {
+            max-height: 100%;
+            max-width: 100%;
+            object-fit: contain;
+        }
+        .card-code {
+            font-size: 13px;
+            color: #475569;
+            margin-bottom: 10px;
+        }
+        /* アクセスエリア・特権ボックス */
+        .access-box {
+            background: #f8fafc;
+            border: 1px solid #dbeafe;
+            border-radius: 8px;
+            padding: 10px;
+            font-size: 12px;
+        }
+        .access-title {
+            color: #1e40af;
+            font-weight: bold;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .access-content {
+            color: #334155;
+            font-weight: bold;
+        }
+    </style>
 </head>
 <body>
 
-  <!-- 状態管理用ラジオ・チェックボックス (CSS Selector連動ロジック) -->
-  <input type="radio" id="tab-outdoor" name="floor" checked>
-  <input type="radio" id="tab-1f" name="floor">
-  <input type="radio" id="tab-2f" name="floor">
+<div class="container">
+    <h1>パス・エリア判別ツール</h1>
+    <p class="subtitle">カード画像とアクセス権限を確認できます（Edge対応・静的早見表）</p>
 
-  <input type="checkbox" id="layer-room">
-  <input type="checkbox" id="layer-acp" checked>
-  <input type="checkbox" id="layer-zone">
-
-  <!-- ヘッダー・操作コントロールパネル -->
-  <div class="control-panel">
-    <div class="top-row">
-      <!-- フロア選択タブ -->
-      <div class="floor-tabs">
-        <label for="tab-outdoor" class="tab-btn" onclick="MapEngine.switchFloor('outdoor')">屋外</label>
-        <label for="tab-1f" class="tab-btn" onclick="MapEngine.switchFloor('1f')">1階</label>
-        <label for="tab-2f" class="tab-btn" onclick="MapEngine.switchFloor('2f')">2階</label>
-      </div>
-
-      <!-- レイヤー表示/非表示トグルメニュー -->
-      <div class="layer-menu">
-        <label for="layer-room">📍 諸室</label>
-        <label for="layer-acp">🛡️ ACP</label>
-        <label for="layer-zone">📐 ゾーン</label>
-      </div>
-
-      <!-- 便利ボタン (テーマ・データ編集) -->
-      <div style="display:flex; gap:4px; flex-wrap:wrap;">
-        <button id="toggle-editor-btn" class="btn-primary" style="background:#f59e0b; color:#000;">✏️ ピン追加・編集</button>
-        <button id="export-data-btn" class="btn-secondary" title="編集データを保存・ダウンロード">📥 保存/書き出し</button>
-        <button id="toggle-theme-btn" class="btn-secondary">🌙 テーマ</button>
-      </div>
+    <!-- カラーフィルター風アンカーリンク -->
+    <div class="filter-buttons">
+        <a href="#section-card" class="filter-btn btn-all">すべて</a>
+        <a href="#oca" class="filter-btn btn-gold">GOLD</a>
+        <a href="#noc" class="filter-btn btn-silver">SILVER</a>
+        <a href="#nocsub" class="filter-btn btn-blue">BLUE</a>
+        <a href="#journalist" class="filter-btn btn-red">RED</a>
+        <a href="#ifaf" class="filter-btn btn-yellow">YELLOW</a>
+        <a href="#athlete" class="filter-btn btn-green">GREEN</a>
+        <a href="#oca_vip" class="filter-btn btn-purple">PURPLE</a>
+        <a href="#observer" class="filter-btn btn-orange">ORANGE</a>
+        <a href="#prestige" class="filter-btn btn-brown">BROWN</a>
     </div>
 
-    <!-- 検索＆部署フィルター行 -->
-    <div class="search-filter-row">
-      <div class="search-box-wrap">
-        <span class="search-icon">🔍</span>
-        <input type="text" id="search-input" class="search-input" placeholder="諸室名・ACPコード・英語名で即座に検索..." list="search-suggestions">
-        <datalist id="search-suggestions"></datalist>
-      </div>
-      <select id="dept-select" class="dept-select">
-        <!-- JSで自動挿入 -->
-      </select>
-    </div>
-  </div>
+    <h2 id="section-card">通常カード (AGIAC) 一覧</h2>
 
-  <!-- マップ表示エリア (Map Viewport with Pan/Zoom) -->
-  <div class="map-viewport">
-    <div class="editor-badge">📍 座標取得モード ON</div>
-
-    <!-- ズーム・パン物理コントロール -->
-    <div class="zoom-controls">
-      <button id="zoom-in" class="zoom-btn" title="拡大">+</button>
-      <button id="zoom-out" class="zoom-btn" title="縮小">−</button>
-      <button id="zoom-reset" class="zoom-btn" title="位置リセット" style="font-size:12px;">⟲</button>
-    </div>
-
-    <!-- Pan & Zoom Transform Container -->
-    <div class="map-container">
-
-      <!-- 屋外マップ -->
-      <div id="map-outdoor" class="floor-map">
-        <img src="assets/outdoor.png" alt="Outdoor Map" class="bg-svg">
-      </div>
-
-      <!-- 1階マップ -->
-      <div id="map-1f" class="floor-map">
-        <img src="assets/floor1.png" alt="1F Floor Map" class="bg-svg">
-      </div>
-
-      <!-- 2階マップ -->
-      <div id="map-2f" class="floor-map">
-        <img src="assets/floor2.png" alt="2F Floor Map" class="bg-svg">
-      </div>
-
-    </div>
-  </div>
-
-  <!-- 下部リアルタイム詳細情報パネル (Detail Drawer) -->
-  <div class="info-panel" id="info-panel">
-    <div class="detail-card">
-      <div class="detail-header">
-        <div class="detail-title">💡 オフライン会場マップ案内</div>
-        <span class="badge badge-dept">OFFLINE ACTIVE</span>
-      </div>
-      <div style="font-size:13px; color:var(--text-secondary); line-height:1.5; margin-top:4px;">
-        マップ上の <b>📍 諸室ピン</b> または <b>🛡️ ACP (アクセスポイント)</b> をタップ/ホバーすると、詳細情報がポップアップおよび画面下に表示されます。<br>
-        ヘッダーのレイヤーメニュー（📍 諸室 / 🛡️ ACP / 📐 ゾーン）で表示切り替えができます。
-      </div>
-    </div>
-  </div>
-
-  <!-- モーダル1: 諸室・ACPの追加・編集モーダル -->
-  <div id="spot-editor-modal" class="modal-backdrop">
-    <div class="modal-card">
-      <div class="modal-header">
-        <h3 id="modal-title" style="margin:0; font-size:16px;">📍 諸室・ACPの追加・編集</h3>
-        <button id="modal-close-btn" class="modal-close">✕</button>
-      </div>
-      <form id="spot-form" style="display:flex; flex-direction:column; gap:10px; margin-top:10px;">
-        <input type="hidden" id="edit-spot-id">
+    <div class="grid">
         
-        <div class="form-row">
-          <label>種別:</label>
-          <div style="display:flex; gap:12px;">
-            <label style="cursor:pointer;"><input type="radio" name="spot-type" value="room" checked style="display:inline;"> 📍 諸室</label>
-            <label style="cursor:pointer;"><input type="radio" name="spot-type" value="acp" style="display:inline;"> 🛡️ ACP</label>
-          </div>
+        <!-- OCA会長 -->
+        <div class="card" id="oca">
+            <div>
+                <div class="card-header">
+                    <span class="card-title">OCA会長</span>
+                    <span class="badge badge-gold">GOLD</span>
+                </div>
+                <div class="card-img-box">
+                    <img src="oca.png" alt="OCA会長" onerror="this.style.display='none';">
+                </div>
+                <div class="card-code">コード: OCA</div>
+            </div>
+            <div class="access-box">
+                <div class="access-title">📍 アクセス可能エリア・特権</div>
+                <div class="access-content" style="color: #1d4ed8;">ALL, HQ, MPC, IBC, AAC<br>VIP / ゾーン: 2, 4, 5, 6</div>
+            </div>
         </div>
 
-        <div class="form-group">
-          <label for="form-name">名称 (諸室名 / ACP名): *</label>
-          <input type="text" id="form-name" required placeholder="例: 大会本部室, 北側メインゲート">
+        <!-- OCA招待賓客 -->
+        <div class="card" id="oca_vip">
+            <div>
+                <div class="card-header">
+                    <span class="card-title">OCA招待賓客</span>
+                    <span class="badge badge-purple">PURPLE</span>
+                </div>
+                <div class="card-img-box">
+                    <img src="oca_vip.png" alt="OCA招待賓客" onerror="this.style.display='none';">
+                </div>
+                <div class="card-code">コード: G</div>
+            </div>
+            <div class="access-box">
+                <div class="access-title">📍 アクセス可能エリア・特権</div>
+                <div class="access-content" style="color: #7e22ce;">ALL, HQ, MPC, IBC, AAC<br>VIP / ゾーン: 2, 4, 5, 6</div>
+            </div>
         </div>
 
-        <div class="form-row" style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
-          <div class="form-group">
-            <label for="form-code">部屋コード / ACPコード:</label>
-            <input type="text" id="form-code" placeholder="例: ADM-01 または ACP-1F-01">
-          </div>
-          <div class="form-group">
-            <label for="form-dept">担当部署:</label>
-            <select id="form-dept" class="dept-select" style="width:100%;">
-              <!-- JSで自動挿入 -->
-            </select>
-          </div>
+        <!-- 選手団団長 -->
+        <div class="card" id="noc">
+            <div>
+                <div class="card-header">
+                    <span class="card-title">選手団団長</span>
+                    <span class="badge badge-silver">SILVER</span>
+                </div>
+                <div class="card-img-box">
+                    <img src="noc.png" alt="選手団団長" onerror="this.style.display='none';">
+                </div>
+                <div class="card-code">コード: NOC</div>
+            </div>
+            <div class="access-box">
+                <div class="access-title">📍 アクセス可能エリア・特権</div>
+                <div class="access-content" style="color: #334155;">ALL, HQ, MPC, IBC, AAC<br>VIP / ゾーン: 2, 4, 5, 6</div>
+            </div>
         </div>
 
-        <div class="form-group">
-          <label for="form-name-en">英語表記:</label>
-          <input type="text" id="form-name-en" placeholder="例: ADM01_TournamentHQ">
+        <!-- 選手団副団長 -->
+        <div class="card" id="nocsub">
+            <div>
+                <div class="card-header">
+                    <span class="card-title">選手団副団長</span>
+                    <span class="badge badge-blue">BLUE</span>
+                </div>
+                <div class="card-img-box">
+                    <img src="nocsub.png" alt="選手団副団長" onerror="this.style.display='none';">
+                </div>
+                <div class="card-code">コード: NOC</div>
+            </div>
+            <div class="access-box">
+                <div class="access-title">📍 アクセス可能エリア・特権</div>
+                <div class="access-content" style="color: #1d4ed8;">ALL, HQ, MPC, IBC, AAC<br>VIP / ゾーン: 2, 4, 5, 6</div>
+            </div>
         </div>
 
-        <div class="form-row" style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px;">
-          <div class="form-group">
-            <label for="form-floor">フロア:</label>
-            <select id="form-floor" style="padding:6px; border-radius:6px; border:1px solid var(--panel-border); background:var(--card-bg); color:var(--text-primary);">
-              <option value="outdoor">屋外</option>
-              <option value="1f">1階</option>
-              <option value="2f">2階</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label for="form-x">X座標 (%):</label>
-            <input type="number" id="form-x" step="0.1" min="0" max="100" required>
-          </div>
-          <div class="form-group">
-            <label for="form-y">Y座標 (%):</label>
-            <input type="number" id="form-y" step="0.1" min="0" max="100" required>
-          </div>
+        <!-- ジャーナリスト -->
+        <div class="card" id="journalist">
+            <div>
+                <div class="card-header">
+                    <span class="card-title">ジャーナリスト</span>
+                    <span class="badge badge-red">RED</span>
+                </div>
+                <div class="card-img-box">
+                    <img src="Journalist.png" alt="ジャーナリスト" onerror="this.style.display='none';">
+                </div>
+                <div class="card-code">コード: E</div>
+            </div>
+            <div class="access-box">
+                <div class="access-title">📍 アクセス可能エリア・特権</div>
+                <div class="access-content" style="color: #b91c1c;">ALL, MPC<br>P (プレスゾーン), 4 (プレス)</div>
+            </div>
         </div>
 
-        <div class="form-group">
-          <label for="form-acp-select">ACP通行許可レベル / アクセス権限 (プルダウン選択):</label>
-          <select id="form-acp-select" style="padding:8px 10px; border-radius:6px; border:1px solid var(--panel-border); background:var(--card-bg); color:var(--text-primary); font-size:13px;">
-            <option value="Level 1 (競技エリア / FOP・選手・役員)">Level 1 (競技エリア / FOP・選手・役員)</option>
-            <option value="Level 2 (選手・チーム役員エリア)">Level 2 (選手・チーム役員エリア / Athletes & Team Leaders)</option>
-            <option value="Level 3 (IF/AF 役員・VIPエリア)">Level 3 (IF/AF 役員・VIPエリア / IF & AF Family)</option>
-            <option value="Level 4 (報道・プレスエリア)">Level 4 (報道・プレスエリア / Press & Photographers)</option>
-            <option value="Level 5 (放送・HB/RHBエリア)">Level 5 (放送・HB/RHBエリア / Broadcasters & HB)</option>
-            <option value="Level 6 (大会運営・スタッフエリア)">Level 6 (大会運営・スタッフエリア / Workforce & Staff)</option>
-            <option value="Level RED (レッドゾーン / 競技専用)">Level RED (レッドゾーン / Secure Operations)</option>
-            <option value="Level BLUE (ブルーゾーン / 選手動線)">Level BLUE (ブルーゾーン / Athlete Warm-up)</option>
-            <option value="Level WHITE (ホワイトゾーン / 運営・車両)">Level WHITE (ホワイトゾーン / Compound & Logistics)</option>
-            <option value="Level FOH (観客・一般エリア)">Level FOH (観客・一般エリア / Front of House)</option>
-            <option value="Level SACD (特別通行証・SACDs)">Level SACD (特別通行証 / Special Access)</option>
-            <option value="ALL (全エリア無制限)">ALL (全エリアアクセス可 / All Access)</option>
-            <option value="custom">✏️ カスタム入力（手動指定）</option>
-          </select>
-          <input type="text" id="form-acp" placeholder="例: Level A (選手・役員), または ACP-1F-01" style="margin-top:6px; display:none;">
+        <!-- IF/AF技術役員 -->
+        <div class="card" id="ifaf">
+            <div>
+                <div class="card-header">
+                    <span class="card-title">IF・AF技術役員</span>
+                    <span class="badge badge-yellow">YELLOW</span>
+                </div>
+                <div class="card-img-box">
+                    <img src="ifaf.png" alt="IF/AF技術役員" onerror="this.style.display='none';">
+                </div>
+                <div class="card-code">コード: F</div>
+            </div>
+            <div class="access-box">
+                <div class="access-title">📍 アクセス可能エリア・特権</div>
+                <div class="access-content" style="color: #a16207;">AQU (水泳会場コード等)<br>F (Federation), 2 (BLUE)</div>
+            </div>
         </div>
 
-        <div class="form-group">
-          <label for="form-pdf">📄 関連PDF資料・マニュアル (任意):</label>
-          <input type="text" id="form-pdf" placeholder="例: assets/docs/manual.pdf または PDFファイル名">
+        <!-- 選手 -->
+        <div class="card" id="athlete">
+            <div>
+                <div class="card-header">
+                    <span class="card-title">選手</span>
+                    <span class="badge badge-green">GREEN</span>
+                </div>
+                <div class="card-img-box">
+                    <img src="athlete.png" alt="選手" onerror="this.style.display='none';">
+                </div>
+                <div class="card-code">コード: A</div>
+            </div>
+            <div class="access-box">
+                <div class="access-title">📍 アクセス可能エリア・特権</div>
+                <div class="access-content" style="color: #15803d;">SWA, AAC<br>A (アスリート), 2 (BLUE競技)</div>
+            </div>
         </div>
 
-        <div class="form-group">
-          <label for="form-desc">概要・説明:</label>
-          <textarea id="form-desc" rows="2" placeholder="特記事項・運用仕様を入力..."></textarea>
+        <!-- オブザーバー -->
+        <div class="card" id="observer">
+            <div>
+                <div class="card-header">
+                    <span class="card-title">オブザーバー</span>
+                    <span class="badge badge-orange">ORANGE</span>
+                </div>
+                <div class="card-img-box">
+                    <img src="observer.png" alt="オブザーバー" onerror="this.style.display='none';">
+                </div>
+                <div class="card-code">コード: O</div>
+            </div>
+            <div class="access-box">
+                <div class="access-title">📍 アクセス可能エリア・特権</div>
+                <div class="access-content" style="color: #c2410c;">HQ, MPC, IBC, AAC<br>ゾーン: 4, 5, 6</div>
+            </div>
         </div>
 
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
-          <button type="button" id="form-delete-btn" class="btn-secondary" style="background:#ef4444; color:#fff; display:none;">🗑️ 削除</button>
-          <div style="display:flex; gap:8px; margin-left:auto;">
-            <button type="button" id="form-cancel-btn" class="btn-secondary">キャンセル</button>
-            <button type="submit" class="btn-primary">💾 保存</button>
-          </div>
+        <!-- プレステージパートナー -->
+        <div class="card" id="prestige">
+            <div>
+                <div class="card-header">
+                    <span class="card-title">プレステージパートナー</span>
+                    <span class="badge badge-brown">BROWN</span>
+                </div>
+                <div class="card-img-box">
+                    <img src="Prestige_Partner.png" alt="プレステージパートナー" onerror="this.style.display='none';">
+                </div>
+                <div class="card-code">コード: Sp</div>
+            </div>
+            <div class="access-box">
+                <div class="access-title">📍 アクセス可能エリア・特権</div>
+                <div class="access-content" style="color: #78350f;">ALL, HQ, MPC, IBC, AAC</div>
+            </div>
         </div>
-      </form>
+
     </div>
-  </div>
 
-  <!-- モーダル2: データ保存・書き出しモーダル -->
-  <div id="export-modal" class="modal-backdrop">
-    <div class="modal-card">
-      <div class="modal-header">
-        <h3 style="margin:0; font-size:16px;">📥 データ保存・書き出し</h3>
-        <button id="export-close-btn" class="modal-close">✕</button>
-      </div>
-      <div style="display:flex; flex-direction:column; gap:12px; margin-top:12px; font-size:13px; color:var(--text-secondary);">
-        <div>
-          ブラウザ上で編集した最新データは自動的にブラウザ（LocalStorage）に保存されています。
+    <!-- 追加リファレンス：SACDs（補助デバイス） -->
+    <h2>SACDs（特定アクセス補助デバイス）簡易リファレンス</h2>
+    <p style="font-size: 12px; color: #64748b; margin-bottom: 12px;">※アクレディテーションカードとセットで使用する補助デバイスです（単体では使用不可）。</p>
+
+    <div class="grid">
+        <div class="card">
+            <div>
+                <div class="card-header">
+                    <span class="card-title">フォトビブス (PHOTO / POOL)</span>
+                    <span class="badge badge-gray">FOP用</span>
+                </div>
+                <div class="card-code">配布: PRS（プレス）</div>
+            </div>
+            <div class="access-box">
+                <div class="access-title">📍 権限・対象</div>
+                <div class="access-content" style="font-weight: normal; font-size: 11px;">フォトグラファー向け。BLUEゾーン内を含むフォトポジションやゾーン4へのアクセスを許可（プールはより優遇されたポジション）。</div>
+            </div>
         </div>
 
-        <button id="download-datajs-btn" class="btn-primary" style="padding:10px; font-size:13px;">
-          📄 js/data.js ファイルとして保存（ダウンロード）
-        </button>
+        <div class="card">
+            <div>
+                <div class="card-header">
+                    <span class="card-title">フォトスタッフビブス</span>
+                    <span class="badge badge-gray">FOP用</span>
+                </div>
+                <div class="card-code">配布: PRS（プレス）</div>
+            </div>
+            <div class="access-box">
+                <div class="access-title">📍 権限・対象</div>
+                <div class="access-content" style="font-weight: normal; font-size: 11px;">PRSフォトオペレーションスタッフが着用。BLUEゾーン内を含むフォトポジションへのアクセスを許可。</div>
+            </div>
+        </div>
 
-        <button id="reset-default-data-btn" class="btn-secondary" style="color:#ef4444; border-color:#ef4444;">
-          🔄 初期データ状態にリセット
-        </button>
-  <!-- スクリプト読み込み (順序重要: data.js -> map-engine.js -> app.js) -->
-  <script src="js/data.js"></script>
-  <script src="js/map-engine.js"></script>
-  <script src="js/app.js"></script>
+        <div class="card">
+            <div>
+                <div class="card-header">
+                    <span class="card-title">HB / RHB 腕章</span>
+                    <span class="badge badge-gray">放送用</span>
+                </div>
+                <div class="card-code">配布: BRS（放送）</div>
+            </div>
+            <div class="access-box">
+                <div class="access-title">📍 権限・対象</div>
+                <div class="access-content" style="font-weight: normal; font-size: 11px;">放送事業者(HB/RHB)向け。BLUEゾーン、カメラプラットフォーム、ゾーン5内のミックスゾーン等へのアクセスを許可。</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div>
+                <div class="card-header">
+                    <span class="card-title">FOPアクセスパス</span>
+                    <span class="badge badge-gray">FOP用</span>
+                </div>
+                <div class="card-code">配布: SPT（スポーツ）</div>
+            </div>
+            <div class="access-box">
+                <div class="access-title">📍 権限・対象</div>
+                <div class="access-content" style="font-weight: normal; font-size: 11px;">チームメンバー向け。FOP（フィールド・オブ・プレイ）へのアクセスが許可される。</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div>
+                <div class="card-header">
+                    <span class="card-title">プレスアタッシェ腕章</span>
+                    <span class="badge badge-gray">ミックスゾーン</span>
+                </div>
+                <div class="card-code">付与: OCA / APC</div>
+            </div>
+            <div class="access-box">
+                <div class="access-title">📍 権限・対象</div>
+                <div class="access-content" style="font-weight: normal; font-size: 11px;">NOC/NPC向け。ミックスゾーン内のBLUEゾーンへのアクセスが許可される。</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div>
+                <div class="card-header">
+                    <span class="card-title">DCS アクセスパス</span>
+                    <span class="badge badge-gray">ドーピング用</span>
+                </div>
+                <div class="card-code">配布: DOP</div>
+            </div>
+            <div class="access-box">
+                <div class="access-title">📍 権限・対象</div>
+                <div class="access-content" style="font-weight: normal; font-size: 11px;">検査対象選手、代表者、通訳、DCO・シャペロン等のスタッフ向け。</div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
 </body>
 </html>
