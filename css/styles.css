@@ -677,3 +677,72 @@ body.editor-active .acp-pin {
 .editor-active .editor-badge {
   display: block;
 }
+
+/* ==========================================================================
+   モバイル端末（スマホ・タブレット）専用レスポンシブスタイル
+   ========================================================================== */
+@media (max-width: 768px) {
+  .pin-tooltip {
+    padding: 4px 8px !important;
+    border-radius: 6px !important;
+    max-width: 180px !important;
+    white-space: normal !important;
+    word-break: break-word !important;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.8) !important;
+  }
+
+  .pin-tooltip-title {
+    font-size: 10px !important;
+    gap: 4px !important;
+    line-height: 1.25 !important;
+  }
+
+  .pin-tooltip-sub {
+    font-size: 8px !important;
+    margin-top: 1px !important;
+    line-height: 1.2 !important;
+  }
+
+  .pin-tooltip-acp-badge {
+    font-size: 8px !important;
+    margin-top: 2px !important;
+  }
+
+  .dept-badge {
+    padding: 1px 3px !important;
+    font-size: 8px !important;
+    border-radius: 3px !important;
+  }
+
+  .info-panel {
+    height: 110px !important;
+    min-height: 110px !important;
+    padding: 8px 12px !important;
+    font-size: 11px !important;
+  }
+
+  .detail-title {
+    font-size: 13px !important;
+  }
+
+  .detail-code {
+    font-size: 10px !important;
+  }
+
+  .detail-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 4px !important;
+  }
+
+  .detail-item {
+    padding: 3px 6px !important;
+  }
+
+  .detail-item .label {
+    font-size: 8px !important;
+  }
+
+  .detail-item .value {
+    font-size: 9px !important;
+  }
+}

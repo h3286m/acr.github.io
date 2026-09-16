@@ -158,6 +158,21 @@
     .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--primary); }
     .editor-badge { position: absolute; left: 14px; top: 14px; background: #f59e0b; color: #000; padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 800; z-index: 35; display: none; box-shadow: 0 4px 10px rgba(0,0,0,0.4); }
     .editor-active .editor-badge { display: block; }
+
+    @media (max-width: 768px) {
+      .pin-tooltip { padding: 4px 8px !important; border-radius: 6px !important; max-width: 180px !important; white-space: normal !important; word-break: break-word !important; box-shadow: 0 4px 15px rgba(0,0,0,0.8) !important; }
+      .pin-tooltip-title { font-size: 10px !important; gap: 4px !important; line-height: 1.25 !important; }
+      .pin-tooltip-sub { font-size: 8px !important; margin-top: 1px !important; line-height: 1.2 !important; }
+      .pin-tooltip-acp-badge { font-size: 8px !important; margin-top: 2px !important; }
+      .dept-badge { padding: 1px 3px !important; font-size: 8px !important; border-radius: 3px !important; }
+      .info-panel { height: 110px !important; min-height: 110px !important; padding: 8px 12px !important; font-size: 11px !important; }
+      .detail-title { font-size: 13px !important; }
+      .detail-code { font-size: 10px !important; }
+      .detail-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 4px !important; }
+      .detail-item { padding: 3px 6px !important; }
+      .detail-item .label { font-size: 8px !important; }
+      .detail-item .value { font-size: 9px !important; }
+    }
   </style>
 </head>
 <body>
